@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Silk.NET.Windowing;
 
 namespace Chips
 {
@@ -6,7 +6,14 @@ namespace Chips
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            WindowOptions options = WindowOptions.Default with 
+            {
+                Size = new(800, 600),
+                Title = "Chips"
+            };
+
+            IWindow window = Window.Create(options);
+            window.Run();
         }
     }
 }
