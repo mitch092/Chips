@@ -2,7 +2,7 @@
 
 namespace Chips
 {
-    internal class Program
+    public class Program
     {
         static void Main(string[] args)
         {
@@ -13,6 +13,9 @@ namespace Chips
             };
 
             IWindow window = Window.Create(options);
+            
+
+
             window.Run();
         }
     }

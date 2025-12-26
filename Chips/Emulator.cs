@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Chips
 {
-    internal class Emulator
+    public class Emulator
     {
     }
 }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Chips
 {
-    internal class Chip8OpenGLRenderer
+    public class Chip8OpenGLRenderer
     {
     }
 }
