@@ -1,4 +1,6 @@
-﻿namespace Chips
+﻿using System;
+
+namespace Chips
 {
     internal class Program
     {
