@@ -11,14 +11,14 @@ namespace Chips
     public class Driver
     {
         private readonly IWindow m_Window;
-        private readonly Chip8OpenGLRenderer m_Renderer;
+        private readonly OpenGLRenderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
         private SchedulerState m_SchedulerState;
         private Emulator m_Emulator;
 
         private static long MaxDeltaTicks => (long)(Stopwatch.Frequency * 0.25);
 
-        public Driver(IWindow window, Chip8OpenGLRenderer renderer)
+        public Driver(IWindow window, OpenGLRenderer renderer)
         {
             m_Window = window;
             m_Renderer = renderer;
