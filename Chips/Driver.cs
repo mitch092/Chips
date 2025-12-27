@@ -7,23 +7,22 @@ namespace Chips
     {
         private readonly IWindow m_Window;
         private readonly Chip8OpenGLRenderer m_Renderer;
-        private readonly Emulator m_Emulator;
         private readonly Stopwatch m_Stopwatch;
 
         private long m_InstructionsRemainder = 0;
         private long m_Chip8TimerTicksRemainder = 0;
         private long m_FramesRemainder = 0;
 
+        private static long MaxDeltaTicks => (long)(Stopwatch.Frequency * 0.25);
         private static long FramesPerSecond => 60;
         private static long Chip8TimerTicksPerSecond => 60;
         private static long InstructionsPerFrame => 10;
         private static long InstructionsPerSecond => InstructionsPerFrame * FramesPerSecond;
 
-        public Driver(IWindow window, Chip8OpenGLRenderer renderer, Emulator emulator)
+        public Driver(IWindow window, Chip8OpenGLRenderer renderer)
         {
             m_Window = window;
             m_Renderer = renderer;
-            m_Emulator = emulator;
             m_Stopwatch = Stopwatch.StartNew();
 
             m_Window.Load += OnLoad;
@@ -40,6 +39,11 @@ namespace Chips
         {
             long deltaTicks = m_Stopwatch.ElapsedTicks;
             m_Stopwatch.Restart();
+
+            if (deltaTicks > MaxDeltaTicks) 
+            {
+                deltaTicks = MaxDeltaTicks;
+            }
 
             (long instructions, m_InstructionsRemainder) =
                 DriverUtils.ConvertUnits(InstructionsPerSecond, Stopwatch.Frequency, deltaTicks, m_InstructionsRemainder);
