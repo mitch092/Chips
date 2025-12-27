@@ -1,5 +1,10 @@
 ﻿using Silk.NET.Windowing;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Linq;
+using static Chips.Scheduler;
 
 namespace Chips
 {
@@ -8,22 +13,18 @@ namespace Chips
         private readonly IWindow m_Window;
         private readonly Chip8OpenGLRenderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
-
-        private long m_InstructionsRemainder = 0;
-        private long m_Chip8TimerTicksRemainder = 0;
-        private long m_FramesRemainder = 0;
+        private SchedulerState m_SchedulerState;
+        private Emulator m_Emulator;
 
         private static long MaxDeltaTicks => (long)(Stopwatch.Frequency * 0.25);
-        private static long FramesPerSecond => 60;
-        private static long Chip8TimerTicksPerSecond => 60;
-        private static long InstructionsPerFrame => 10;
-        private static long InstructionsPerSecond => InstructionsPerFrame * FramesPerSecond;
 
         public Driver(IWindow window, Chip8OpenGLRenderer renderer)
         {
             m_Window = window;
             m_Renderer = renderer;
             m_Stopwatch = Stopwatch.StartNew();
+            m_SchedulerState = SchedulerState.Initial;
+            m_Emulator = new(0, 0, 0);
 
             m_Window.Load += OnLoad;
             m_Window.Update += OnUpdate;
@@ -45,26 +46,22 @@ namespace Chips
                 deltaTicks = MaxDeltaTicks;
             }
 
-            (long instructions, m_InstructionsRemainder) =
-                DriverUtils.ConvertUnits(InstructionsPerSecond, Stopwatch.Frequency, deltaTicks, m_InstructionsRemainder);
-            for (int i = 0; i < instructions; ++i)
-            {
-                // Execute instruction.
+            (IEnumerable<Event> events, m_SchedulerState) = Unfold2(m_SchedulerState.AddTicks(deltaTicks), SchedulerStep);
+            m_Emulator = events.Aggregate(m_Emulator, Execute);
+        }
 
-                (long chip8TimerTicks, m_Chip8TimerTicksRemainder) =
-                    DriverUtils.ConvertUnits(Chip8TimerTicksPerSecond, InstructionsPerSecond, 1, m_Chip8TimerTicksRemainder);
-                for (int j = 0; j < chip8TimerTicks; ++j)
-                {
-                    // Execute timer tick.
-                }
-            }
+        private Emulator Execute(Emulator state, Event evt) => evt switch 
+        {
+            Event.ExecuteInstruction => state.ExecuteInstruction,
+            Event.TickTimer => state.TickTimer,
+            Event.RenderFrame => Render(state),
+            _ => state,
+        };
 
-            (long frames, m_FramesRemainder) =
-                DriverUtils.ConvertUnits(FramesPerSecond, Stopwatch.Frequency, deltaTicks, m_FramesRemainder);
-            if (frames > 0)
-            {
-                // Render frame.
-            }
+        private static Emulator Render(Emulator state) 
+        {
+            // Render frame
+            return state;
         }
 
         private void OnClose()
