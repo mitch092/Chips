@@ -26,8 +26,7 @@ namespace Chips
 
         public record SchedulerState(long RemainingTicks, Dictionary<Event, long> Phase)
         {
-            public static SchedulerState Initial =>
-                new(0, new() { [Event.ExecuteInstruction] = 0, [Event.TickTimer] = 0, [Event.RenderFrame] = 0 });
+            public static SchedulerState Initial => new(0, Enum.GetValues<Event>().ToDictionary(key => key, key => (long)0));
             public SchedulerState AddTicks(long ticks) => this with { RemainingTicks = RemainingTicks + ticks };
             public SchedulerState RemoveTicks(long ticks) => this with { RemainingTicks = RemainingTicks - ticks };
         }
@@ -43,7 +42,7 @@ namespace Chips
             }
         }
 
-        public static (IEnumerable<T>, TState) Unfold2<T, TState>(TState initial, Func<TState, (T item, TState next)?> step) 
+        public static (IEnumerable<T>, TState) Unfold2<T, TState>(TState initial, Func<TState, (T item, TState next)?> step)
         {
             var output = Unfold(initial, step);
             return (output.Select(item => item.Item1), output.Last().Item2);

@@ -58,7 +58,7 @@ namespace Chips
             _ => state,
         };
 
-        private static Emulator Render(Emulator state) 
+        private Emulator Render(Emulator state) 
         {
             // Render frame
             return state;
