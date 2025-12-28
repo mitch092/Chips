@@ -4,12 +4,16 @@ using System.Linq;
 
 namespace Chips
 {
-    public sealed class Scheduler<TEvent>(long ticksPerSecond, IEnumerable<(TEvent evt, long rate)> events) where TEvent : notnull
+    public sealed class Scheduler<TEvent>(long ticksPerSecond, long maxDeltaTicks, IEnumerable<(TEvent evt, long rate)> events) where TEvent : notnull
     {
         private readonly List<EventStream> m_EventStreams = events.Select(item => new EventStream(item.evt, item.rate)).ToList();
 
         public IEnumerable<TEvent> Advance(long deltaTicks)
         {
+            if (deltaTicks > maxDeltaTicks)
+            {
+                deltaTicks = maxDeltaTicks;
+            }
             IEnumerable<ScheduledEvent> nextEvents;
             while (deltaTicks > 0 && (nextEvents = m_EventStreams.Select(s => new ScheduledEvent(s, ticksPerSecond)).Where(s => s.MinTicksUntil <= deltaTicks)).Any())
             {
@@ -38,7 +42,7 @@ namespace Chips
         }
 
         public static Scheduler<Chip8Event> CreateChip8Scheduler() =>
-            new(Stopwatch.Frequency, [(Chip8Event.ExecuteInstruction, 600), (Chip8Event.TickTimer, 60), (Chip8Event.RenderFrame, 60)]);
+            new(Stopwatch.Frequency, (long)(Stopwatch.Frequency * 0.25), [(Chip8Event.ExecuteInstruction, 600), (Chip8Event.TickTimer, 60), (Chip8Event.RenderFrame, 60)]);
     }
 
     public enum Chip8Event

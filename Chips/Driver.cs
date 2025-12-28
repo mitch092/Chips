@@ -1,7 +1,6 @@
 ﻿using Silk.NET.Windowing;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Chips
 {
@@ -11,9 +10,7 @@ namespace Chips
         private readonly OpenGLRenderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
         private readonly Scheduler<Chip8Event> m_Scheduler;
-        private Emulator m_Emulator;
-
-        private static long MaxDeltaTicks => (long)(Stopwatch.Frequency * 0.25);
+        private readonly Emulator m_Emulator;
 
         public Driver(IWindow window, OpenGLRenderer renderer)
         {
@@ -37,11 +34,6 @@ namespace Chips
         {
             long deltaTicks = m_Stopwatch.ElapsedTicks;
             m_Stopwatch.Restart();
-            if (deltaTicks > MaxDeltaTicks)
-            {
-                deltaTicks = MaxDeltaTicks;
-            }
-
             IEnumerable<Chip8Event> events = m_Scheduler.Advance(deltaTicks);
             foreach (Chip8Event chip8Event in events)
             {
