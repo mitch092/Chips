@@ -21,7 +21,7 @@ namespace Chips
             m_Renderer = renderer;
             m_Stopwatch = Stopwatch.StartNew();
             m_Scheduler = Scheduler<Chip8Event>.CreateChip8Scheduler();
-            m_Emulator = new(0, 0, 0);
+            m_Emulator = new();
 
             m_Window.Load += OnLoad;
             m_Window.Update += OnUpdate;
@@ -41,22 +41,24 @@ namespace Chips
             {
                 deltaTicks = MaxDeltaTicks;
             }
+
             IEnumerable<Chip8Event> events = m_Scheduler.Advance(deltaTicks);
-            m_Emulator = events.Aggregate(m_Emulator, Execute);
-        }
-
-        private Emulator Execute(Emulator state, Chip8Event evt) => evt switch
-        {
-            Chip8Event.ExecuteInstruction => state.ExecuteInstruction,
-            Chip8Event.TickTimer => state.TickTimer,
-            Chip8Event.RenderFrame => Render(state),
-            _ => state,
-        };
-
-        private Emulator Render(Emulator state)
-        {
-            // Render frame
-            return state;
+            foreach (Chip8Event chip8Event in events)
+            {
+                switch (chip8Event)
+                {
+                    case Chip8Event.ExecuteInstruction:
+                        m_Emulator.ExecuteInstruction();
+                        break;
+                    case Chip8Event.TickTimer:
+                        m_Emulator.TickTimer();
+                        break;
+                    case Chip8Event.RenderFrame:
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private void OnClose()

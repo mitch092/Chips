@@ -1,8 +1,15 @@
 ﻿namespace Chips
 {
-    public sealed record Emulator(byte A, byte B, byte C)
+    public class Emulator() 
     {
-        public Emulator ExecuteInstruction => this;
-        public Emulator TickTimer => this;
+        public void ExecuteInstruction() 
+        {
+            
+        }
+
+        public void TickTimer() 
+        {
+            
+        }
     }
 }
