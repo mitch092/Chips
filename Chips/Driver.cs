@@ -1,10 +1,7 @@
 ﻿using Silk.NET.Windowing;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Linq;
-using static Chips.Scheduler;
 
 namespace Chips
 {
@@ -13,7 +10,7 @@ namespace Chips
         private readonly IWindow m_Window;
         private readonly OpenGLRenderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
-        private SchedulerState m_SchedulerState;
+        private readonly Scheduler<Chip8Event> m_Scheduler;
         private Emulator m_Emulator;
 
         private static long MaxDeltaTicks => (long)(Stopwatch.Frequency * 0.25);
@@ -23,7 +20,7 @@ namespace Chips
             m_Window = window;
             m_Renderer = renderer;
             m_Stopwatch = Stopwatch.StartNew();
-            m_SchedulerState = SchedulerState.Initial;
+            m_Scheduler = Scheduler<Chip8Event>.CreateChip8Scheduler();
             m_Emulator = new(0, 0, 0);
 
             m_Window.Load += OnLoad;
@@ -40,25 +37,23 @@ namespace Chips
         {
             long deltaTicks = m_Stopwatch.ElapsedTicks;
             m_Stopwatch.Restart();
-
-            if (deltaTicks > MaxDeltaTicks) 
+            if (deltaTicks > MaxDeltaTicks)
             {
                 deltaTicks = MaxDeltaTicks;
             }
-
-            (IEnumerable<Event> events, m_SchedulerState) = Unfold2(m_SchedulerState.AddTicks(deltaTicks), SchedulerStep);
+            IEnumerable<Chip8Event> events = m_Scheduler.Advance(deltaTicks);
             m_Emulator = events.Aggregate(m_Emulator, Execute);
         }
 
-        private Emulator Execute(Emulator state, Event evt) => evt switch 
+        private Emulator Execute(Emulator state, Chip8Event evt) => evt switch
         {
-            Event.ExecuteInstruction => state.ExecuteInstruction,
-            Event.TickTimer => state.TickTimer,
-            Event.RenderFrame => Render(state),
+            Chip8Event.ExecuteInstruction => state.ExecuteInstruction,
+            Chip8Event.TickTimer => state.TickTimer,
+            Chip8Event.RenderFrame => Render(state),
             _ => state,
         };
 
-        private Emulator Render(Emulator state) 
+        private Emulator Render(Emulator state)
         {
             // Render frame
             return state;
