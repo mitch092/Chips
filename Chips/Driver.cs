@@ -1,4 +1,5 @@
-﻿using Silk.NET.Windowing;
+﻿using Chips.Rendering;
+using Silk.NET.Windowing;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -7,12 +8,12 @@ namespace Chips
     public class Driver
     {
         private readonly IWindow m_Window;
-        private readonly OpenGLRenderer m_Renderer;
+        private readonly Renderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
         private readonly Scheduler<Chip8Event> m_Scheduler;
         private readonly Emulator m_Emulator;
 
-        public Driver(IWindow window, OpenGLRenderer renderer)
+        public Driver(IWindow window, Renderer renderer)
         {
             m_Window = window;
             m_Renderer = renderer;

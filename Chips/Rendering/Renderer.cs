@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chips
+namespace Chips.Rendering
 {
-    public class OpenGLRenderer
+    public class Renderer
     {
     }
 }
