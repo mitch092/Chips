@@ -15,10 +15,20 @@ namespace Chips.Rendering
             return WebGPU.GetApi();
         }
 
+        public static void FreeApi(WebGPU api)
+        {
+            api.Dispose();
+        }
+
         public unsafe static Instance* CreateInstance(WebGPU api)
         {
             InstanceDescriptor descriptor = new();
             return api.CreateInstance(ref descriptor);
+        }
+
+        public unsafe static void FreeInstance(WebGPU api, Instance* instance)
+        {
+            api.InstanceRelease(instance);
         }
 
         public unsafe static Surface* CreateSurface(IWindow window, WebGPU api, Instance* instance)
@@ -26,6 +36,11 @@ namespace Chips.Rendering
             return window.CreateWebGPUSurface(api, instance);
         }
 
+        public unsafe static void FreeSurface(WebGPU api, Surface* surface) 
+        {
+            api.SurfaceRelease(surface);
+        }
+        // TODO: Write Free* functions for the rest of the functions below.
         public unsafe static Adapter* CreateAdapter(WebGPU api, Instance* instance, Surface* surface)
         {
             RequestAdapterOptions options = new()
@@ -90,19 +105,22 @@ namespace Chips.Rendering
             return api.DeviceGetQueue(device);
         }
 
-        public unsafe static object ConfigureSurface(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
+        public unsafe static SurfaceConfiguration* ConfigureSurface(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
         {
-            SurfaceConfiguration configuration = new()
-            {
-                Device = device,
-                Format = TextureFormat.Bgra8UnormSrgb,
-                Width = surfaceSize.X,
-                Height = surfaceSize.Y,
-                Usage = TextureUsage.RenderAttachment,
-                PresentMode = PresentMode.Fifo
-            };
-            api.SurfaceConfigure(surface, ref configuration);
-            return new();
+            SurfaceConfiguration* surfaceConfiguration = (SurfaceConfiguration*)SilkMarshal.Allocate(sizeof(SurfaceConfiguration));
+            surfaceConfiguration->Device = device;
+            surfaceConfiguration->Format = TextureFormat.Bgra8UnormSrgb;
+            surfaceConfiguration->Width = surfaceSize.X;
+            surfaceConfiguration->Height = surfaceSize.Y;
+            surfaceConfiguration->Usage = TextureUsage.RenderAttachment;
+            surfaceConfiguration->PresentMode = PresentMode.Fifo;
+            api.SurfaceConfigure(surface, surfaceConfiguration);
+            return surfaceConfiguration;
+        }
+
+        public unsafe static void FreeSurfaceConfiguration(SurfaceConfiguration* surfaceConfiguration)
+        {
+            SilkMarshal.Free((nint)surfaceConfiguration);
         }
 
         public unsafe static uint* CreateFramebuffer(Vector2D<uint> framebufferSize)

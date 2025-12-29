@@ -1,19 +1,23 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Chips.Rendering
 {
     public sealed class InputNode<T> : INode
     {
         private T m_Node;
+        private readonly Action<T> m_Destroy;
         private List<INode> m_Children = [];
 
-        public InputNode(T node)
+        public InputNode(T node, Action<T> destroy)
         {
             m_Node = node;
+            m_Destroy = destroy;
         }
 
         public T Node
         {
+            get => m_Node;
             set
             {
                 m_Node = value;
@@ -40,6 +44,7 @@ namespace Chips.Rendering
             {
                 child.Dispose();
             }
+            m_Destroy(m_Node);
         }
     }
 }

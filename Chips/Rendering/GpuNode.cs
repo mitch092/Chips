@@ -56,13 +56,13 @@ namespace Chips.Rendering
         public void Dispose() 
         {
             if (m_Node != null) 
-            {
-                m_Destroy(m_Node.Value);
-                m_Node = null;
+            {                
                 foreach (var child in m_Children) 
                 {
                     child.Dispose();
                 }
+                m_Destroy(m_Node.Value);
+                m_Node = null;
             }
         }
     }
