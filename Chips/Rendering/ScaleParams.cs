@@ -1,6 +1,6 @@
 ﻿namespace Chips.Rendering
 {
-    public struct Params
+    public struct ScaleParams
     {
         public uint SrcW, SrcH;
         public uint DstW, DstH;

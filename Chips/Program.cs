@@ -14,7 +14,7 @@ namespace Chips
 
             IWindow window = Window.Create(options);
             
-
+            
 
             window.Run();
         }
