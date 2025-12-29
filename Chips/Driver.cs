@@ -8,15 +8,13 @@ namespace Chips
     public class Driver
     {
         private readonly IWindow m_Window;
-        private readonly Renderer m_Renderer;
         private readonly Stopwatch m_Stopwatch;
         private readonly Scheduler<Chip8Event> m_Scheduler;
         private readonly Emulator m_Emulator;
 
-        public Driver(IWindow window, Renderer renderer)
+        public Driver(IWindow window)
         {
             m_Window = window;
-            m_Renderer = renderer;
             m_Stopwatch = Stopwatch.StartNew();
             m_Scheduler = Scheduler<Chip8Event>.CreateChip8Scheduler();
             m_Emulator = new();

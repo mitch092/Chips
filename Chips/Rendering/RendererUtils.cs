@@ -3,15 +3,12 @@ using Silk.NET.Maths;
 using Silk.NET.WebGPU;
 using Silk.NET.Windowing;
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using Buffer = Silk.NET.WebGPU.Buffer;
 
 namespace Chips.Rendering
 {
-    public static class Renderer
+    public static class RendererUtils
     {
         public static WebGPU CreateApi()
         {
@@ -52,7 +49,7 @@ namespace Chips.Rendering
                     }
                     else
                     {
-                        string? msg = Marshal.PtrToStringAnsi((IntPtr)msgPtr);
+                        string? msg = SilkMarshal.PtrToString((nint)msgPtr);//Marshal.PtrToStringAnsi((IntPtr)msgPtr);
                         Console.WriteLine($"Error whle retrieving WGPU Adapter: {msg}");
                     }
                 });
@@ -78,7 +75,7 @@ namespace Chips.Rendering
                     }
                     else
                     {
-                        string? msg = Marshal.PtrToStringAnsi((IntPtr)msgPtr);
+                        string? msg = SilkMarshal.PtrToString((nint)msgPtr);//Marshal.PtrToStringAnsi((IntPtr)msgPtr);
                         Console.WriteLine($"Error whle retrieving WGPU Device: {msg}");
                     }
                 });
@@ -93,75 +90,58 @@ namespace Chips.Rendering
             return api.DeviceGetQueue(device);
         }
 
-        public unsafe static void ConfigureSurface(WebGPU api, Device* device, Surface* surface, Vector2D<int> surfaceSize)
+        public unsafe static object ConfigureSurface(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
         {
             SurfaceConfiguration configuration = new()
             {
                 Device = device,
                 Format = TextureFormat.Bgra8UnormSrgb,
-                Width = (uint)surfaceSize.X,
-                Height = (uint)surfaceSize.Y,
+                Width = surfaceSize.X,
+                Height = surfaceSize.Y,
                 Usage = TextureUsage.RenderAttachment,
                 PresentMode = PresentMode.Fifo
             };
             api.SurfaceConfigure(surface, ref configuration);
+            return new();
         }
 
-        public static uint[] CreateFramebuffer(Vector2D<int> framebufferSize)
+        public unsafe static uint* CreateFramebuffer(Vector2D<uint> framebufferSize)
         {
-            return new uint[framebufferSize.X * framebufferSize.Y];
+            return (uint*)SilkMarshal.Allocate((int)(framebufferSize.X * framebufferSize.Y * sizeof(uint)));
         }
 
-        public unsafe static Texture* CreateSourceTexture(WebGPU api, Device* device, Vector2D<int> framebufferSize)
+        public unsafe static Texture* CreateSourceTexture(WebGPU api, Device* device, Vector2D<uint> framebufferSize)
         {
             TextureDescriptor descriptor = new()
             {
-                Size = new Extent3D((uint)framebufferSize.X, (uint)framebufferSize.Y, 1),
+                Size = new Extent3D(framebufferSize.X, framebufferSize.Y, 1),
                 Format = TextureFormat.Rgba8Unorm,
                 Usage = TextureUsage.CopyDst | TextureUsage.TextureBinding,
+                Dimension = TextureDimension.Dimension2D,
+                MipLevelCount = 1,
+                SampleCount = 1
             };
             return api.DeviceCreateTexture(device, ref descriptor);
         }
 
-        public unsafe static TextureView* CreateSourceTextureView(WebGPU api, Texture* texture)
+        // Use for both source and scaled textures.
+        public unsafe static TextureView* CreateTextureView(WebGPU api, Texture* texture)
         {
-            TextureViewDescriptor descriptor = new()
-            {
-                Format = TextureFormat.Rgba8Unorm,
-                Dimension = TextureViewDimension.Dimension2D,
-                BaseMipLevel = 0,
-                MipLevelCount = 1,
-                BaseArrayLayer = 0,
-                ArrayLayerCount = 1,
-                Aspect = TextureAspect.All
-            };
-            return api.TextureCreateView(texture, ref descriptor);
+            return api.TextureCreateView(texture, null);
         }
 
-        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, Vector2D<int> surfaceSize)
+        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, Vector2D<uint> surfaceSize)
         {
             TextureDescriptor descriptor = new()
             {
-                Size = new Extent3D((uint)surfaceSize.X, (uint)surfaceSize.Y, 1),
+                Size = new Extent3D(surfaceSize.X, surfaceSize.Y, 1),
                 Format = TextureFormat.Rgba8Unorm,
                 Usage = TextureUsage.StorageBinding | TextureUsage.TextureBinding,
+                Dimension = TextureDimension.Dimension2D,
+                MipLevelCount = 1,
+                SampleCount = 1
             };
             return api.DeviceCreateTexture(device, ref descriptor);
-        }
-
-        public unsafe static TextureView* CreateScaledTextureView(WebGPU api, Texture* texture)
-        {
-            TextureViewDescriptor descriptor = new()
-            {
-                Format = TextureFormat.Rgba8Unorm,
-                Dimension = TextureViewDimension.Dimension2D,
-                BaseMipLevel = 0,
-                MipLevelCount = 1,
-                BaseArrayLayer = 0,
-                ArrayLayerCount = 1,
-                Aspect = TextureAspect.All
-            };
-            return api.TextureCreateView(texture, ref descriptor);
         }
 
         public unsafe static Sampler* CreateSampler(WebGPU api, Device* device)
@@ -186,10 +166,11 @@ namespace Chips.Rendering
             return api.DeviceCreateBuffer(device, ref descriptor);
         }
 
+        // Use for both compute shader and render shader.
         public unsafe static ShaderModule* CreateShaderModule(WebGPU api, Device* device, string shaderSource)
         {
             ShaderModule* module = null;
-            nint shaderPointer = SilkMarshal.StringToPtr(ComputeShader.Source, NativeStringEncoding.UTF8);
+            nint shaderPointer = SilkMarshal.StringToPtr(shaderSource);
             try
             {
                 ShaderModuleWGSLDescriptor wgslDescriptor = new()
@@ -216,7 +197,7 @@ namespace Chips.Rendering
         public const string ComputeShaderEntryPoint = "cs_main";
         public unsafe static ComputePipeline* CreateComputePipeline(WebGPU api, Device* device, ShaderModule* computeShaderModule)
         {
-            nint entryPoint = SilkMarshal.StringToPtr(ComputeShaderEntryPoint, NativeStringEncoding.UTF8);
+            nint entryPoint = SilkMarshal.StringToPtr(ComputeShaderEntryPoint);
             ComputePipeline* computePipeline;
             try
             {
@@ -241,20 +222,22 @@ namespace Chips.Rendering
         public const string FragmentShaderEntryPoint = "fs_main";
         public unsafe static RenderPipeline* CreateRenderPipeline(WebGPU api, Device* device, ShaderModule* renderShaderModule)
         {
-            nint vertexShaderEntryPoint = SilkMarshal.StringToPtr(VertesShaderEntryPoint, NativeStringEncoding.UTF8);
-            nint fragmentShaderEntryPoint = SilkMarshal.StringToPtr(FragmentShaderEntryPoint, NativeStringEncoding.UTF8);
+            nint vertexShaderEntryPoint = SilkMarshal.StringToPtr(VertesShaderEntryPoint);
+            nint fragmentShaderEntryPoint = SilkMarshal.StringToPtr(FragmentShaderEntryPoint);
             RenderPipeline* renderPipeline;
             try
             {
-                ColorTargetState colorTargetState = new()
+                ColorTargetState* colorTargetStates = stackalloc ColorTargetState[1];
+                colorTargetStates[0] = new()
                 {
                     Format = TextureFormat.Bgra8UnormSrgb
                 };
+
                 FragmentState fragment = new()
                 {
                     Module = renderShaderModule,
                     EntryPoint = (byte*)fragmentShaderEntryPoint,
-                    Targets = &colorTargetState,
+                    Targets = colorTargetStates,
                     TargetCount = 1,
                 };
                 RenderPipelineDescriptor descriptor = new()
@@ -363,7 +346,7 @@ namespace Chips.Rendering
                     Entries = renderBindGroupEntries,
                     EntryCount = 2
                 };
-                renderBindGroup = api.DeviceCreateBindGroup(device, &descriptor);
+                renderBindGroup = api.DeviceCreateBindGroup(device, ref descriptor);
             }
             finally
             {
@@ -371,6 +354,132 @@ namespace Chips.Rendering
             }
 
             return renderBindGroup;
+        }
+
+        public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, Vector2D<uint> surfaceSize, Vector2D<uint> framebufferSize)
+        {
+            uint scale = Math.Max(1u, Math.Min(
+                surfaceSize.X / framebufferSize.X,
+                surfaceSize.Y / framebufferSize.Y));
+
+            uint scaleW = framebufferSize.X * scale;
+            uint scaleH = framebufferSize.Y * scale;
+
+            ScaleParams* scaleParams = (ScaleParams*)SilkMarshal.Allocate(sizeof(ScaleParams));
+            scaleParams->SrcW = framebufferSize.X;
+            scaleParams->SrcH = framebufferSize.Y;
+            scaleParams->DstW = surfaceSize.X;
+            scaleParams->DstH = surfaceSize.Y;
+            scaleParams->Scale = scale;
+            scaleParams->OffX = (surfaceSize.X - scaleW) / 2;
+            scaleParams->OffY = (surfaceSize.Y - scaleH) / 2;
+            scaleParams->Mode = (uint)mode;
+
+            return scaleParams;
+        }
+
+        public unsafe static void Render(
+            WebGPU api,
+            Surface* surface,
+            Device* device,
+            Queue* queue,
+            Buffer* paramsBuffer,
+            ScaleParams* scaleParams,
+            uint* framebuffer,
+            Vector2D<uint> framebufferSize,
+            Texture* sourceTexture,
+            ComputePipeline* computePipeline,
+            BindGroup* computeBindGroup,
+            Vector2D<uint> surfaceSize,
+            RenderPipeline* renderPipeline,
+            BindGroup* renderBindGroup)
+        {
+            api.QueueWriteBuffer(queue, paramsBuffer, 0, scaleParams, (nuint)sizeof(ScaleParams));
+
+            ImageCopyTexture imageCopyTexture = new()
+            {
+                Texture = sourceTexture
+            };
+            nuint size = framebufferSize.X * framebufferSize.Y * sizeof(uint);
+            TextureDataLayout textureDataLayout = new()
+            {
+                BytesPerRow = framebufferSize.X * sizeof(uint),
+                RowsPerImage = framebufferSize.Y,
+            };
+            Extent3D extent3D = new(framebufferSize.X, framebufferSize.Y, 1);
+            api.QueueWriteTexture(queue, ref imageCopyTexture, framebuffer, size, ref textureDataLayout, ref extent3D);
+
+            CommandEncoder* commandEncoder = api.DeviceCreateCommandEncoder(device, null);
+            try
+            {
+                ComputePassEncoder* computePassEncoder = api.CommandEncoderBeginComputePass(commandEncoder, null);
+                try
+                {
+                    api.ComputePassEncoderSetPipeline(computePassEncoder, computePipeline);
+                    api.ComputePassEncoderSetBindGroup(computePassEncoder, 0, computeBindGroup, 0, null);
+                    uint workgroupX = ((surfaceSize.X + 7) / 8);
+                    uint workgroupY = ((surfaceSize.Y + 7) / 8);
+                    api.ComputePassEncoderDispatchWorkgroups(computePassEncoder, workgroupX, workgroupY, 1);
+                    api.ComputePassEncoderEnd(computePassEncoder);
+                }
+                finally
+                {
+                    api.ComputePassEncoderRelease(computePassEncoder);
+                }
+
+                SurfaceTexture backbuffer = new();
+                api.SurfaceGetCurrentTexture(surface, ref backbuffer);
+                TextureView* backbufferView = api.TextureCreateView(backbuffer.Texture, null);
+                try
+                {
+                    RenderPassColorAttachment* colorAttachments = stackalloc RenderPassColorAttachment[1];
+                    colorAttachments[0] = new()
+                    {
+                        View = backbufferView,
+                        LoadOp = LoadOp.Clear,
+                        StoreOp = StoreOp.Store,
+                        ClearValue = new Color(0, 0, 0, 1)
+                    };
+                    RenderPassDescriptor renderPassDescriptor = new()
+                    {
+                        ColorAttachmentCount = 1,
+                        ColorAttachments = colorAttachments,
+                    };
+
+                    RenderPassEncoder* renderPassEncoder = api.CommandEncoderBeginRenderPass(commandEncoder, ref renderPassDescriptor);
+                    try
+                    {
+                        api.RenderPassEncoderSetPipeline(renderPassEncoder, renderPipeline);
+                        api.RenderPassEncoderSetBindGroup(renderPassEncoder, 0, renderBindGroup, 0, null);
+                        api.RenderPassEncoderDraw(renderPassEncoder, 3, 1, 0, 0);
+                        api.RenderPassEncoderEnd(renderPassEncoder);
+                    }
+                    finally
+                    {
+                        api.RenderPassEncoderRelease(renderPassEncoder);
+                    }
+                }
+                finally
+                {
+                    api.TextureViewRelease(backbufferView);
+                }
+
+                CommandBuffer* commandBuffer = api.CommandEncoderFinish(commandEncoder, null);
+                try
+                {
+                    api.QueueSubmit(queue, 1, ref commandBuffer);
+                }
+                finally
+                {
+                    api.CommandBufferRelease(commandBuffer);
+                }
+            }
+            finally
+            {
+                api.CommandEncoderRelease(commandEncoder);
+            }
+
+            api.SurfacePresent(surface);
         }
     }
 }
