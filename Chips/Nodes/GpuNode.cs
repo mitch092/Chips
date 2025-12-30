@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Chips.Rendering
+namespace Chips.Nodes
 {
     public sealed class GpuNode<T> : INode where T : unmanaged
     {

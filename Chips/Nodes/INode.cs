@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Chips.Rendering
+namespace Chips.Nodes
 {
     public interface INode : IDisposable
     {
