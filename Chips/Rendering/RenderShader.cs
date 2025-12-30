@@ -23,7 +23,7 @@ var samp : sampler;
 fn fs_main(@builtin(position) pos : vec4<f32>) -> @location(0) vec4<f32> {
     let dims = vec2<f32>(textureDimensions(tex));
     let uv = pox.xy / dims;
-    return testureSample(tex, samp, uv);
+    return textureSample(tex, samp, uv);
 }";
     }
 }
