@@ -73,6 +73,11 @@ namespace Chips.Rendering
             return adapter;
         }
 
+        public unsafe static void FreeAdapter(WebGPU api, Adapter* adapter) 
+        {
+            api.AdapterRelease(adapter);
+        }
+
         public unsafe static Device* CreateDevice(WebGPU api, Adapter* adapter)
         {
             DeviceDescriptor descriptor = new();
@@ -100,12 +105,22 @@ namespace Chips.Rendering
             return device;
         }
 
+        public unsafe static void FreeDevice(WebGPU api, Device* device) 
+        {
+            api.DeviceRelease(device);
+        }
+
         public unsafe static Queue* CreateQueue(WebGPU api, Device* device)
         {
             return api.DeviceGetQueue(device);
         }
 
-        public unsafe static SurfaceConfiguration* ConfigureSurface(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
+        public unsafe static void FreeQueue(WebGPU api, Queue* queue) 
+        {
+            api.QueueRelease(queue);
+        }
+
+        public unsafe static SurfaceConfiguration* CreateSurfaceConfiguration(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
         {
             SurfaceConfiguration* surfaceConfiguration = (SurfaceConfiguration*)SilkMarshal.Allocate(sizeof(SurfaceConfiguration));
             surfaceConfiguration->Device = device;
@@ -126,6 +141,11 @@ namespace Chips.Rendering
         public unsafe static uint* CreateFramebuffer(Vector2D<uint> framebufferSize)
         {
             return (uint*)SilkMarshal.Allocate((int)(framebufferSize.X * framebufferSize.Y * sizeof(uint)));
+        }
+
+        public unsafe static void FreeFramebuffer(uint* framebuffer) 
+        {
+            SilkMarshal.Free((nint)framebuffer);
         }
 
         public unsafe static Texture* CreateSourceTexture(WebGPU api, Device* device, Vector2D<uint> framebufferSize)
