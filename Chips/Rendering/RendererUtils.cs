@@ -36,7 +36,7 @@ namespace Chips.Rendering
             return window.CreateWebGPUSurface(api, instance);
         }
 
-        public unsafe static void FreeSurface(WebGPU api, Surface* surface) 
+        public unsafe static void FreeSurface(WebGPU api, Surface* surface)
         {
             api.SurfaceRelease(surface);
         }
@@ -412,92 +412,73 @@ namespace Chips.Rendering
             RenderPipeline* renderPipeline,
             BindGroup* renderBindGroup)
         {
-            api.QueueWriteBuffer(queue, paramsBuffer, 0, scaleParams, (nuint)sizeof(ScaleParams));
-
-            ImageCopyTexture imageCopyTexture = new()
-            {
-                Texture = sourceTexture
-            };
-            nuint size = framebufferSize.X * framebufferSize.Y * sizeof(uint);
-            TextureDataLayout textureDataLayout = new()
-            {
-                BytesPerRow = framebufferSize.X * sizeof(uint),
-                RowsPerImage = framebufferSize.Y,
-            };
-            Extent3D extent3D = new(framebufferSize.X, framebufferSize.Y, 1);
-            api.QueueWriteTexture(queue, ref imageCopyTexture, framebuffer, size, ref textureDataLayout, ref extent3D);
-
-            CommandEncoder* commandEncoder = api.DeviceCreateCommandEncoder(device, null);
+            CommandEncoder* commandEncoder = null;
+            ComputePassEncoder* computePassEncoder = null;
+            TextureView* backbufferView = null;
+            RenderPassEncoder* renderPassEncoder = null;
+            CommandBuffer* commandBuffer = null;
             try
             {
-                ComputePassEncoder* computePassEncoder = api.CommandEncoderBeginComputePass(commandEncoder, null);
-                try
+                api.QueueWriteBuffer(queue, paramsBuffer, 0, scaleParams, (nuint)sizeof(ScaleParams));
+
+                ImageCopyTexture imageCopyTexture = new()
                 {
-                    api.ComputePassEncoderSetPipeline(computePassEncoder, computePipeline);
-                    api.ComputePassEncoderSetBindGroup(computePassEncoder, 0, computeBindGroup, 0, null);
-                    uint workgroupX = ((surfaceSize.X + 7) / 8);
-                    uint workgroupY = ((surfaceSize.Y + 7) / 8);
-                    api.ComputePassEncoderDispatchWorkgroups(computePassEncoder, workgroupX, workgroupY, 1);
-                    api.ComputePassEncoderEnd(computePassEncoder);
-                }
-                finally
+                    Texture = sourceTexture
+                };
+                nuint size = framebufferSize.X * framebufferSize.Y * sizeof(uint);
+                TextureDataLayout textureDataLayout = new()
                 {
-                    api.ComputePassEncoderRelease(computePassEncoder);
-                }
+                    BytesPerRow = framebufferSize.X * sizeof(uint),
+                    RowsPerImage = framebufferSize.Y,
+                };
+                Extent3D extent3D = new(framebufferSize.X, framebufferSize.Y, 1);
+                api.QueueWriteTexture(queue, ref imageCopyTexture, framebuffer, size, ref textureDataLayout, ref extent3D);
+
+                commandEncoder = api.DeviceCreateCommandEncoder(device, null);
+
+                computePassEncoder = api.CommandEncoderBeginComputePass(commandEncoder, null);
+                api.ComputePassEncoderSetPipeline(computePassEncoder, computePipeline);
+                api.ComputePassEncoderSetBindGroup(computePassEncoder, 0, computeBindGroup, 0, null);
+                uint workgroupX = ((surfaceSize.X + 7) / 8);
+                uint workgroupY = ((surfaceSize.Y + 7) / 8);
+                api.ComputePassEncoderDispatchWorkgroups(computePassEncoder, workgroupX, workgroupY, 1);
+                api.ComputePassEncoderEnd(computePassEncoder);
 
                 SurfaceTexture backbuffer = new();
                 api.SurfaceGetCurrentTexture(surface, ref backbuffer);
-                TextureView* backbufferView = api.TextureCreateView(backbuffer.Texture, null);
-                try
+                backbufferView = api.TextureCreateView(backbuffer.Texture, null);
+                RenderPassColorAttachment* colorAttachments = stackalloc RenderPassColorAttachment[1];
+                colorAttachments[0] = new()
                 {
-                    RenderPassColorAttachment* colorAttachments = stackalloc RenderPassColorAttachment[1];
-                    colorAttachments[0] = new()
-                    {
-                        View = backbufferView,
-                        LoadOp = LoadOp.Clear,
-                        StoreOp = StoreOp.Store,
-                        ClearValue = new Color(0, 0, 0, 1)
-                    };
-                    RenderPassDescriptor renderPassDescriptor = new()
-                    {
-                        ColorAttachmentCount = 1,
-                        ColorAttachments = colorAttachments,
-                    };
+                    View = backbufferView,
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                    ClearValue = new Color(0, 0, 0, 1)
+                };
+                RenderPassDescriptor renderPassDescriptor = new()
+                {
+                    ColorAttachmentCount = 1,
+                    ColorAttachments = colorAttachments,
+                };
 
-                    RenderPassEncoder* renderPassEncoder = api.CommandEncoderBeginRenderPass(commandEncoder, ref renderPassDescriptor);
-                    try
-                    {
-                        api.RenderPassEncoderSetPipeline(renderPassEncoder, renderPipeline);
-                        api.RenderPassEncoderSetBindGroup(renderPassEncoder, 0, renderBindGroup, 0, null);
-                        api.RenderPassEncoderDraw(renderPassEncoder, 3, 1, 0, 0);
-                        api.RenderPassEncoderEnd(renderPassEncoder);
-                    }
-                    finally
-                    {
-                        api.RenderPassEncoderRelease(renderPassEncoder);
-                    }
-                }
-                finally
-                {
-                    api.TextureViewRelease(backbufferView);
-                }
+                renderPassEncoder = api.CommandEncoderBeginRenderPass(commandEncoder, ref renderPassDescriptor);
+                api.RenderPassEncoderSetPipeline(renderPassEncoder, renderPipeline);
+                api.RenderPassEncoderSetBindGroup(renderPassEncoder, 0, renderBindGroup, 0, null);
+                api.RenderPassEncoderDraw(renderPassEncoder, 3, 1, 0, 0);
+                api.RenderPassEncoderEnd(renderPassEncoder);
 
-                CommandBuffer* commandBuffer = api.CommandEncoderFinish(commandEncoder, null);
-                try
-                {
-                    api.QueueSubmit(queue, 1, ref commandBuffer);
-                }
-                finally
-                {
-                    api.CommandBufferRelease(commandBuffer);
-                }
+                commandBuffer = api.CommandEncoderFinish(commandEncoder, null);
+                api.QueueSubmit(queue, 1, ref commandBuffer);
+                api.SurfacePresent(surface);
             }
             finally
             {
+                api.ComputePassEncoderRelease(computePassEncoder);
+                api.RenderPassEncoderRelease(renderPassEncoder);
+                api.TextureViewRelease(backbufferView);
+                api.CommandBufferRelease(commandBuffer);
                 api.CommandEncoderRelease(commandEncoder);
             }
-
-            api.SurfacePresent(surface);
         }
     }
 }
