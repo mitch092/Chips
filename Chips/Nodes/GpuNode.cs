@@ -46,10 +46,10 @@ namespace Chips.Nodes
                         m_Destroy(m_Node.Value);
                         m_Node = null;
                     }
-                    m_Node = m_Create();
                     m_Dirty = false;
                 }
-                return m_Node!.Value;
+                m_Node ??= m_Create();
+                return m_Node.Value;
             }
         }
 
