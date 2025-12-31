@@ -253,6 +253,7 @@ namespace Chips.Rendering
             return module;
         }
 
+        // Use for both compute and render shader modules.
         public unsafe static void FreeShaderModule(WebGPU api, ShaderModule* shaderModule)
         {
             api.ShaderModuleRelease(shaderModule);
@@ -333,9 +334,9 @@ namespace Chips.Rendering
             return renderPipeline;
         }
 
-        public unsafe static void FreeRenderPipeline()
+        public unsafe static void FreeRenderPipeline(WebGPU api, RenderPipeline* renderPipeline)
         {
-
+            api.RenderPipelineRelease(renderPipeline);
         }
 
         public unsafe static BindGroup* CreateComputeBindGroup(
@@ -430,6 +431,12 @@ namespace Chips.Rendering
             return renderBindGroup;
         }
 
+        // Use for both compute and render bind groups.
+        public unsafe static void FreeBindGroup(WebGPU api, BindGroup* bindGroup)
+        {
+            api.BindGroupRelease(bindGroup);
+        }
+
         public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, SurfaceConfiguration* surfaceConfiguration, Vector2D<uint> framebufferSize)
         {
             Vector2D<uint> surfaceSize = new(surfaceConfiguration->Width, surfaceConfiguration->Height);
@@ -452,6 +459,11 @@ namespace Chips.Rendering
             scaleParams->Mode = (uint)mode;
 
             return scaleParams;
+        }
+
+        public unsafe static void FreeScaleParams(ScaleParams* scaleParams)
+        {
+            SilkMarshal.Free((nint)scaleParams);
         }
 
         public unsafe static void Render(
