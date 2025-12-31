@@ -2,7 +2,9 @@
 using Silk.NET.Maths;
 using Silk.NET.WebGPU;
 using Silk.NET.Windowing;
+using System;
 using static Chips.Rendering.RendererUtils;
+using Buffer = Silk.NET.WebGPU.Buffer;
 
 namespace Chips.Rendering
 {
@@ -40,8 +42,8 @@ namespace Chips.Rendering
         {
             Vector2D<uint> surfaceSize = new((uint)window.Size.X, (uint)window.Size.Y);
 
-            m_Window = new(window, _ => { });
             m_Api = new(CreateApi(), FreeApi);
+            m_Window = new(window, _ => { });
             m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
             m_RenderShaderSource = new(RenderShader.Source, _ => { });
             m_SurfaceSize = new(surfaceSize, _ => { });
@@ -81,7 +83,7 @@ namespace Chips.Rendering
             m_Framebuffer = new(
                 () => CreateFramebuffer(m_FramebufferSize),
                 framebuffer => FreeFramebuffer(framebuffer),
-                [m_FramebufferSize]);
+                [m_Api, m_FramebufferSize]);
 
             m_SourceTexture = new(
                 () => CreateSourceTexture(m_Api, m_Device.Node, m_FramebufferSize),
@@ -146,7 +148,33 @@ namespace Chips.Rendering
             m_ScaleParams = new(
                 () => CreateScaleParams(m_ScalingMode, m_SurfaceConfiguration.Node, m_FramebufferSize),
                 scaleParams => FreeScaleParams(scaleParams),
-                [m_ScalingMode, m_SurfaceConfiguration, m_FramebufferSize]);
+                [m_Api, m_ScalingMode, m_SurfaceConfiguration, m_FramebufferSize]);
+
+            m_Window.Node.Closing += OnClose;
+        }
+
+        private void OnClose()
+        {
+            m_Window.Node.Closing -= OnClose;
+            m_Api.Dispose();
+        }
+
+        public unsafe void Present()
+        {
+            Render(m_Api, m_Surface.Node, m_Device.Node, m_Queue.Node, m_ParamsBuffer.Node, m_ScaleParams.Node, m_Framebuffer.Node, m_SourceTexture.Node,
+                m_ComputePipeline.Node, m_ComputeBindGroup.Node, m_RenderPipeline.Node, m_RenderBindGroup.Node);
+        }
+
+        public Vector2D<uint> Size => m_FramebufferSize;
+
+        public unsafe Span<uint> Framebuffer
+        {
+            get 
+            {
+                Vector2D<uint> size = Size;
+                int sizeBytes = (int)(size.X * size.Y * sizeof(uint)); 
+                return new(m_Framebuffer.Node, sizeBytes);
+            }
         }
     }
 }

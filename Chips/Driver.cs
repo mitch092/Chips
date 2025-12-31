@@ -11,16 +11,18 @@ namespace Chips
         private readonly Stopwatch m_Stopwatch;
         private readonly Scheduler<Chip8Event> m_Scheduler;
         private readonly Emulator m_Emulator;
+        private readonly Renderer m_Renderer;
 
-        public Driver(IWindow window)
+        public Driver(IWindow window, Stopwatch stopwatch, Scheduler<Chip8Event> scheduler, Emulator emulator, Renderer renderer)
         {
             m_Window = window;
-            m_Stopwatch = Stopwatch.StartNew();
-            m_Scheduler = Scheduler<Chip8Event>.CreateChip8Scheduler();
-            m_Emulator = new();
-
+            m_Stopwatch = stopwatch;
+            m_Scheduler = scheduler;
+            m_Emulator = emulator;
+            m_Renderer = renderer;
             m_Window.Load += OnLoad;
             m_Window.Update += OnUpdate;
+            m_Window.Render += OnRender;
             m_Window.Closing += OnClose;
         }
 
@@ -50,6 +52,22 @@ namespace Chips
                         break;
                 }
             }
+        }
+
+        private void OnRender(double obj)
+        {
+            var size = m_Renderer.Size;
+            var fb = m_Renderer.Framebuffer;
+            for (uint y = 0; y < size.Y; ++y) 
+            {
+                for (uint x = 0; x < size.X; ++x) 
+                {
+                    int ndx = (int)(y * size.X + x);
+                    uint color = 0xFF000000u | (uint)(x * 255 / size.X) | ((uint)(y * 255 / size.Y) << 8);
+                    fb[ndx] = color;
+                }
+            }
+            m_Renderer.Present();
         }
 
         private void OnClose()
