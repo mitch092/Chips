@@ -12,13 +12,13 @@ namespace Chips.Rendering
         {
             Vector2D<uint> surfaceSize = new((uint)window.Size.X, (uint)window.Size.Y);
 
+            InputNode<IWindow> m_Window = new(window, _ => { });
+            InputNode<WebGPU> m_Api = new(CreateApi(), FreeApi);
+            InputNode<string> m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
+            InputNode<string> m_RenderShaderSource = new(RenderShader.Source, _ => { });
             InputNode<Vector2D<uint>> m_SurfaceSize = new(surfaceSize, _ => { });
             InputNode<Vector2D<uint>> m_FramebufferSize = new(framebufferSize, _ => { });
             InputNode<ScalingMode> m_ScalingMode = new(ScalingMode.FreeNearest, _ => { });
-            InputNode<IWindow> m_Window = new(window, _ => { });
-            InputNode<string> m_ComputeShader = new(ComputeShader.Source, _ => { });
-            InputNode<string> m_RenderShader = new(RenderShader.Source, _ => { });
-            InputNode<WebGPU> m_Api = new(CreateApi(), FreeApi);
 
             GpuNode<GpuHandle<Instance>> m_Instance = new(
                 () => CreateInstance(m_Api),
@@ -56,29 +56,44 @@ namespace Chips.Rendering
                 [m_FramebufferSize]);
 
             GpuNode<GpuHandle<Texture>> m_SourceTexture = new(
-                () => CreateSourceTexture(m_Api, m_Device.Node, m_FramebufferSize), 
-                sourceTexture => FreeTexture(m_Api, sourceTexture), 
+                () => CreateSourceTexture(m_Api, m_Device.Node, m_FramebufferSize),
+                sourceTexture => FreeTexture(m_Api, sourceTexture),
                 [m_Api, m_Device, m_FramebufferSize]);
 
             GpuNode<GpuHandle<TextureView>> m_SourceTextureView = new(
-                () => CreateTextureView(m_Api, m_SourceTexture.Node), 
-                sourceTextureView => FreeTextureView(m_Api, sourceTextureView), 
+                () => CreateTextureView(m_Api, m_SourceTexture.Node),
+                sourceTextureView => FreeTextureView(m_Api, sourceTextureView),
                 [m_Api, m_SourceTexture]);
 
             GpuNode<GpuHandle<Texture>> m_ScaledTexture = new(
-                () => CreateScaledTexture(m_Api, m_Device.Node, m_SurfaceConfiguration.Node), 
-                scaledTexture => FreeTexture(m_Api, scaledTexture), 
+                () => CreateScaledTexture(m_Api, m_Device.Node, m_SurfaceConfiguration.Node),
+                scaledTexture => FreeTexture(m_Api, scaledTexture),
                 [m_Api, m_Device, m_SurfaceConfiguration]);
 
             GpuNode<GpuHandle<TextureView>> m_ScaledTextureView = new(
-                () => CreateTextureView(m_Api, m_ScaledTexture.Node), 
-                scaledTextureView => FreeTextureView(m_Api, scaledTextureView), 
+                () => CreateTextureView(m_Api, m_ScaledTexture.Node),
+                scaledTextureView => FreeTextureView(m_Api, scaledTextureView),
                 [m_Api, m_ScaledTexture]);
 
             GpuNode<GpuHandle<Sampler>> m_Sampler = new(
-                () => CreateSampler(m_Api, m_Device.Node), 
-                sampler => FreeSampler(m_Api, sampler), 
+                () => CreateSampler(m_Api, m_Device.Node),
+                sampler => FreeSampler(m_Api, sampler),
                 [m_Api, m_Device]);
+
+            GpuNode<GpuHandle<Buffer>> m_ParamsBuffer = new(
+                () => CreateParamsBuffer(m_Api, m_Device.Node),
+                paramsBuffer => FreeParamsBuffer(m_Api, paramsBuffer),
+                [m_Api, m_Device]);
+
+            GpuNode<GpuHandle<ShaderModule>> m_ComputeShaderModule = new(
+                () => CreateShaderModule(m_Api, m_Device.Node, m_ComputeShaderSource),
+                computeShaderModule => FreeShaderModule(m_Api, computeShaderModule),
+                [m_Api, m_Device, m_ComputeShaderSource]);
+
+            GpuNode<GpuHandle<ShaderModule>> m_RenderShaderModule = new(
+                () => CreateShaderModule(m_Api, m_Device.Node, m_RenderShaderSource),
+                renderShaderModule => FreeShaderModule(m_Api, renderShaderModule),
+                [m_Api, m_Device, m_RenderShaderSource]);
         }
     }
 }

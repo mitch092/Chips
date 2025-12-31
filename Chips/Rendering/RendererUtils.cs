@@ -228,7 +228,6 @@ namespace Chips.Rendering
         // Use for both compute shader and render shader.
         public unsafe static ShaderModule* CreateShaderModule(WebGPU api, Device* device, string shaderSource)
         {
-            ShaderModule* module = null;
             nint shaderPointer = SilkMarshal.StringToPtr(shaderSource, NativeStringEncoding.UTF8);
             try
             {
@@ -244,13 +243,12 @@ namespace Chips.Rendering
                 {
                     NextInChain = &wgslDescriptor.Chain
                 };
-                module = api.DeviceCreateShaderModule(device, ref descriptor);
+                return api.DeviceCreateShaderModule(device, ref descriptor);
             }
             finally
             {
                 SilkMarshal.Free(shaderPointer);
             }
-            return module;
         }
 
         // Use for both compute and render shader modules.
@@ -259,28 +257,20 @@ namespace Chips.Rendering
             api.ShaderModuleRelease(shaderModule);
         }
 
-        public const string ComputeShaderEntryPoint = "cs_main";
         public unsafe static ComputePipeline* CreateComputePipeline(WebGPU api, Device* device, ShaderModule* computeShaderModule)
         {
-            nint entryPoint = SilkMarshal.StringToPtr(ComputeShaderEntryPoint, NativeStringEncoding.UTF8);
-            ComputePipeline* computePipeline;
-            try
+            fixed (byte* computeEntryPoint = "cs_main"u8)
             {
                 ComputePipelineDescriptor descriptor = new()
                 {
                     Compute = new()
                     {
                         Module = computeShaderModule,
-                        EntryPoint = (byte*)entryPoint
+                        EntryPoint = computeEntryPoint
                     }
                 };
-                computePipeline = api.DeviceCreateComputePipeline(device, ref descriptor);
+                return api.DeviceCreateComputePipeline(device, ref descriptor);
             }
-            finally
-            {
-                SilkMarshal.Free(entryPoint);
-            }
-            return computePipeline;
         }
 
         public unsafe static void FreeComputePipeline(WebGPU api, ComputePipeline* computePipeline)
@@ -288,14 +278,9 @@ namespace Chips.Rendering
             api.ComputePipelineRelease(computePipeline);
         }
 
-        public const string VertesShaderEntryPoint = "vs_main";
-        public const string FragmentShaderEntryPoint = "fs_main";
         public unsafe static RenderPipeline* CreateRenderPipeline(WebGPU api, Device* device, ShaderModule* renderShaderModule)
         {
-            nint vertexShaderEntryPoint = SilkMarshal.StringToPtr(VertesShaderEntryPoint, NativeStringEncoding.UTF8);
-            nint fragmentShaderEntryPoint = SilkMarshal.StringToPtr(FragmentShaderEntryPoint, NativeStringEncoding.UTF8);
-            RenderPipeline* renderPipeline;
-            try
+            fixed (byte* vertexShaderEntryPoint = "vs_main"u8, fragmentShaderEntryPoint = "fs_main"u8) 
             {
                 ColorTargetState* colorTargetStates = stackalloc ColorTargetState[1];
                 colorTargetStates[0] = new()
@@ -306,7 +291,7 @@ namespace Chips.Rendering
                 FragmentState fragment = new()
                 {
                     Module = renderShaderModule,
-                    EntryPoint = (byte*)fragmentShaderEntryPoint,
+                    EntryPoint = fragmentShaderEntryPoint,
                     Targets = colorTargetStates,
                     TargetCount = 1,
                 };
@@ -315,7 +300,7 @@ namespace Chips.Rendering
                     Vertex = new()
                     {
                         Module = renderShaderModule,
-                        EntryPoint = (byte*)vertexShaderEntryPoint
+                        EntryPoint = vertexShaderEntryPoint
                     },
                     Fragment = &fragment,
                     Primitive = new()
@@ -324,14 +309,8 @@ namespace Chips.Rendering
                         CullMode = CullMode.None,
                     }
                 };
-                renderPipeline = api.DeviceCreateRenderPipeline(device, &descriptor);
+                return api.DeviceCreateRenderPipeline(device, &descriptor);
             }
-            finally
-            {
-                SilkMarshal.Free(vertexShaderEntryPoint);
-                SilkMarshal.Free(fragmentShaderEntryPoint);
-            }
-            return renderPipeline;
         }
 
         public unsafe static void FreeRenderPipeline(WebGPU api, RenderPipeline* renderPipeline)
@@ -372,7 +351,6 @@ namespace Chips.Rendering
                 Sampler = sampler,
             };
 
-            BindGroup* computeBindGroup = null;
             BindGroupLayout* computeBindGroupLayout = api.ComputePipelineGetBindGroupLayout(computePipeline, 0);
             try
             {
@@ -382,14 +360,12 @@ namespace Chips.Rendering
                     Entries = computeBindGroupEntries,
                     EntryCount = 4
                 };
-                computeBindGroup = api.DeviceCreateBindGroup(device, &descriptor);
+                return api.DeviceCreateBindGroup(device, &descriptor);
             }
             finally
             {
                 api.BindGroupLayoutRelease(computeBindGroupLayout);
             }
-
-            return computeBindGroup;
         }
 
         public unsafe static BindGroup* CreateRenderBindGroup(
@@ -411,7 +387,6 @@ namespace Chips.Rendering
                 Sampler = sampler,
             };
 
-            BindGroup* renderBindGroup = null;
             BindGroupLayout* renderBindGroupLayout = api.RenderPipelineGetBindGroupLayout(renderPipeline, 0);
             try
             {
@@ -421,14 +396,12 @@ namespace Chips.Rendering
                     Entries = renderBindGroupEntries,
                     EntryCount = 2
                 };
-                renderBindGroup = api.DeviceCreateBindGroup(device, ref descriptor);
+                return api.DeviceCreateBindGroup(device, ref descriptor);
             }
             finally
             {
                 api.BindGroupLayoutRelease(renderBindGroupLayout);
             }
-
-            return renderBindGroup;
         }
 
         // Use for both compute and render bind groups.
