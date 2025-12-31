@@ -14,9 +14,9 @@ namespace Chips.Rendering
         private readonly InputNode<WebGPU> m_Api;
         private readonly InputNode<string> m_ComputeShaderSource;
         private readonly InputNode<string> m_RenderShaderSource;
-        private readonly InputNode<Vector2D<uint>> m_SurfaceSize;
+        private InputNode<Vector2D<uint>> m_SurfaceSize;
         private readonly InputNode<Vector2D<uint>> m_FramebufferSize;
-        private readonly InputNode<ScalingMode> m_ScalingMode;
+        private InputNode<ScalingMode> m_ScalingMode;
         private readonly GpuNode<GpuHandle<Instance>> m_Instance;
         private readonly GpuNode<GpuHandle<Surface>> m_Surface;
         private readonly GpuNode<GpuHandle<Adapter>> m_Adapter;
@@ -144,11 +144,18 @@ namespace Chips.Rendering
                 scaleParams => FreeScaleParams(scaleParams),
                 [m_Api, m_ScalingMode, m_SurfaceSize, m_FramebufferSize]);
 
+            m_Window.Node.Resize += OnResize;
             m_Window.Node.Closing += OnClose;
+        }
+
+        private void OnResize(Vector2D<int> surfaceSize)
+        {
+            m_SurfaceSize.Node = new((uint)surfaceSize.X, (uint)surfaceSize.Y);
         }
 
         private void OnClose()
         {
+            m_Window.Node.Resize -= OnResize;
             m_Window.Node.Closing -= OnClose;
             m_Api.Dispose();
         }
