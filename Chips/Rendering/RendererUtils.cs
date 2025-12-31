@@ -46,7 +46,7 @@ namespace Chips.Rendering
             RequestAdapterOptions options = new()
             {
                 CompatibleSurface = surface,
-                BackendType = BackendType.WebGpu,
+                //BackendType = BackendType.D3D11,
                 PowerPreference = PowerPreference.HighPerformance,
             };
 
@@ -92,6 +92,7 @@ namespace Chips.Rendering
                     {
                         device = wgpuDevice;
                         Console.WriteLine("Retrieved WGPU Device.");
+                        tcs.TrySetResult();
                     }
                     else
                     {
