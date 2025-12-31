@@ -4,14 +4,14 @@
     {
         public const string Source = @"
 struct Params {
-    srcW : u32;
-    srcH : u32;
-    dstW : u32;
-    dstH : u32;
-    scale : u32;
-    offX : u32;
-    offY : u32;
-    mode : u32;
+    srcW : u32,
+    srcH : u32,
+    dstW : u32,
+    dstH : u32,
+    scale : u32,
+    offX : u32,
+    offY : u32,
+    mode : u32,
 };
 
 @group(0) @binding(0)
