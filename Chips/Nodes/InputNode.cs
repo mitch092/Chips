@@ -5,14 +5,13 @@ namespace Chips.Nodes
 {
     public sealed class InputNode<T> : INode
     {
-        private T? m_Node;
-        private readonly Func<T> m_Create;
+        private T m_Node;
         private readonly Action<T> m_Destroy;
         private readonly List<INode> m_Children = [];
 
-        public InputNode(Func<T> create, Action<T> destroy)
+        public InputNode(T node, Action<T> destroy)
         {
-            m_Create = create;
+            m_Node = node;
             m_Destroy = destroy;
         }
 
@@ -20,11 +19,7 @@ namespace Chips.Nodes
 
         public T Node
         {
-            get
-            {
-                m_Node ??= m_Create();
-                return m_Node;
-            }
+            get => m_Node;
             set
             {
                 if (m_Node != null)

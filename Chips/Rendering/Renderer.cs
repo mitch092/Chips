@@ -22,7 +22,6 @@ namespace Chips.Rendering
         private readonly GpuNode<GpuHandle<Adapter>> m_Adapter;
         private readonly GpuNode<GpuHandle<Device>> m_Device;
         private readonly GpuNode<GpuHandle<Queue>> m_Queue;
-        private readonly GpuNode<GpuHandle<SurfaceConfiguration>> m_SurfaceConfiguration;
         private readonly GpuNode<GpuHandle<uint>> m_Framebuffer;
         private readonly GpuNode<GpuHandle<Texture>> m_SourceTexture;
         private readonly GpuNode<GpuHandle<TextureView>> m_SourceTextureView;
@@ -42,13 +41,13 @@ namespace Chips.Rendering
         {
             Vector2D<uint> surfaceSize = new((uint)window.Size.X, (uint)window.Size.Y);
 
-            m_Api = new(CreateApi, FreeApi);
-            m_Window = new(() => window, _ => { });
-            m_ComputeShaderSource = new(() => ComputeShader.Source, _ => { });
-            m_RenderShaderSource = new(() => RenderShader.Source, _ => { });
-            m_SurfaceSize = new(() => surfaceSize, _ => { });
-            m_FramebufferSize = new(() => framebufferSize, _ => { });
-            m_ScalingMode = new(() => ScalingMode.FreeNearest, _ => { });
+            m_Api = new(CreateApi(), FreeApi);
+            m_Window = new(window, _ => { });
+            m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
+            m_RenderShaderSource = new(RenderShader.Source, _ => { });
+            m_SurfaceSize = new(surfaceSize, _ => { });
+            m_FramebufferSize = new(framebufferSize, _ => { });
+            m_ScalingMode = new(ScalingMode.FreeNearest, _ => { });
 
             m_Instance = new(
                 () => CreateInstance(m_Api),
@@ -75,11 +74,6 @@ namespace Chips.Rendering
                 queue => FreeQueue(m_Api, queue),
                 [m_Api, m_Device]);
 
-            m_SurfaceConfiguration = new(
-                () => CreateSurfaceConfiguration(m_Api, m_Device.Node, m_Surface.Node, m_SurfaceSize),
-                surfaceConfiguration => FreeSurfaceConfiguration(surfaceConfiguration),
-                [m_Api, m_Device, m_Surface, m_SurfaceSize]);
-
             m_Framebuffer = new(
                 () => CreateFramebuffer(m_FramebufferSize),
                 framebuffer => FreeFramebuffer(framebuffer),
@@ -96,9 +90,9 @@ namespace Chips.Rendering
                 [m_Api, m_SourceTexture]);
 
             m_ScaledTexture = new(
-                () => CreateScaledTexture(m_Api, m_Device.Node, m_SurfaceConfiguration.Node),
+                () => CreateScaledTexture(m_Api, m_Device.Node, m_Surface.Node, m_SurfaceSize),
                 scaledTexture => FreeTexture(m_Api, scaledTexture),
-                [m_Api, m_Device, m_SurfaceConfiguration]);
+                [m_Api, m_Device, m_Surface, m_SurfaceSize]);
 
             m_ScaledTextureView = new(
                 () => CreateTextureView(m_Api, m_ScaledTexture.Node),
@@ -146,9 +140,9 @@ namespace Chips.Rendering
                 [m_Api, m_Device, m_RenderPipeline, m_ScaledTextureView, m_Sampler]);
 
             m_ScaleParams = new(
-                () => CreateScaleParams(m_ScalingMode, m_SurfaceConfiguration.Node, m_FramebufferSize),
+                () => CreateScaleParams(m_ScalingMode, m_SurfaceSize.Node, m_FramebufferSize),
                 scaleParams => FreeScaleParams(scaleParams),
-                [m_Api, m_ScalingMode, m_SurfaceConfiguration, m_FramebufferSize]);
+                [m_Api, m_ScalingMode, m_SurfaceSize, m_FramebufferSize]);
 
             m_Window.Node.Closing += OnClose;
         }
@@ -169,10 +163,10 @@ namespace Chips.Rendering
 
         public unsafe Span<uint> Framebuffer
         {
-            get 
+            get
             {
                 Vector2D<uint> size = Size;
-                int sizeBytes = (int)(size.X * size.Y * sizeof(uint)); 
+                int sizeBytes = (int)(size.X * size.Y * sizeof(uint));
                 return new(m_Framebuffer.Node, sizeBytes);
             }
         }

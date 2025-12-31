@@ -3,6 +3,7 @@ using Silk.NET.Maths;
 using Silk.NET.WebGPU;
 using Silk.NET.Windowing;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Buffer = Silk.NET.WebGPU.Buffer;
 
@@ -121,24 +122,6 @@ namespace Chips.Rendering
             api.QueueRelease(queue);
         }
 
-        public unsafe static SurfaceConfiguration* CreateSurfaceConfiguration(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
-        {
-            SurfaceConfiguration* surfaceConfiguration = (SurfaceConfiguration*)SilkMarshal.Allocate(sizeof(SurfaceConfiguration));
-            surfaceConfiguration->Device = device;
-            surfaceConfiguration->Format = TextureFormat.Bgra8UnormSrgb;
-            surfaceConfiguration->Width = surfaceSize.X;
-            surfaceConfiguration->Height = surfaceSize.Y;
-            surfaceConfiguration->Usage = TextureUsage.RenderAttachment;
-            surfaceConfiguration->PresentMode = PresentMode.Fifo;
-            api.SurfaceConfigure(surface, surfaceConfiguration);
-            return surfaceConfiguration;
-        }
-
-        public unsafe static void FreeSurfaceConfiguration(SurfaceConfiguration* surfaceConfiguration)
-        {
-            SilkMarshal.Free((nint)surfaceConfiguration);
-        }
-
         public unsafe static uint* CreateFramebuffer(Vector2D<uint> framebufferSize)
         {
             return (uint*)SilkMarshal.Allocate((int)(framebufferSize.X * framebufferSize.Y * sizeof(uint)));
@@ -163,11 +146,22 @@ namespace Chips.Rendering
             return api.DeviceCreateTexture(device, ref descriptor);
         }
 
-        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, SurfaceConfiguration* surfaceConfiguration)
+        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, Surface* surface, Vector2D<uint> surfaceSize)
         {
+            SurfaceConfiguration surfaceConfiguration = new()
+            {
+                Device = device,
+                Format = TextureFormat.Bgra8UnormSrgb,
+                Width = surfaceSize.X,
+                Height = surfaceSize.Y,
+                Usage = TextureUsage.RenderAttachment,
+                PresentMode = PresentMode.Fifo,
+            };
+            api.SurfaceConfigure(surface, ref surfaceConfiguration);
+
             TextureDescriptor descriptor = new()
             {
-                Size = new Extent3D(surfaceConfiguration->Width, surfaceConfiguration->Height, 1),
+                Size = new Extent3D(surfaceSize.X, surfaceSize.Y, 1),
                 Format = TextureFormat.Rgba8Unorm,
                 Usage = TextureUsage.StorageBinding | TextureUsage.TextureBinding,
                 Dimension = TextureDimension.Dimension2D,
@@ -411,10 +405,8 @@ namespace Chips.Rendering
             api.BindGroupRelease(bindGroup);
         }
 
-        public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, SurfaceConfiguration* surfaceConfiguration, Vector2D<uint> framebufferSize)
+        public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, Vector2D<uint> surfaceSize, Vector2D<uint> framebufferSize)
         {
-            Vector2D<uint> surfaceSize = new(surfaceConfiguration->Width, surfaceConfiguration->Height);
-
             uint scale = Math.Max(1u, Math.Min(
                 surfaceSize.X / framebufferSize.X,
                 surfaceSize.Y / framebufferSize.Y));
