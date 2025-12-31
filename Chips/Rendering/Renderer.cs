@@ -8,24 +8,34 @@ namespace Chips.Rendering
 {
     public class Renderer
     {
+        private readonly InputNode<IWindow> m_Window;
+        private readonly InputNode<WebGPU> m_Api;
+        private readonly InputNode<string> m_ComputeShaderSource;
+        private readonly InputNode<string> m_RenderShaderSource;
+        private readonly InputNode<Vector2D<uint>> m_SurfaceSize;
+        private readonly InputNode<Vector2D<uint>> m_FramebufferSize;
+        private readonly InputNode<ScalingMode> m_ScalingMode;
+        private readonly GpuNode<GpuHandle<Instance>> m_Instance;
+        private readonly GpuNode<GpuHandle<Surface>> m_Surface;
+
         public unsafe Renderer(IWindow window, Vector2D<uint> framebufferSize)
         {
             Vector2D<uint> surfaceSize = new((uint)window.Size.X, (uint)window.Size.Y);
 
-            InputNode<IWindow> m_Window = new(window, _ => { });
-            InputNode<WebGPU> m_Api = new(CreateApi(), FreeApi);
-            InputNode<string> m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
-            InputNode<string> m_RenderShaderSource = new(RenderShader.Source, _ => { });
-            InputNode<Vector2D<uint>> m_SurfaceSize = new(surfaceSize, _ => { });
-            InputNode<Vector2D<uint>> m_FramebufferSize = new(framebufferSize, _ => { });
-            InputNode<ScalingMode> m_ScalingMode = new(ScalingMode.FreeNearest, _ => { });
+            m_Window = new(window, _ => { });
+            m_Api = new(CreateApi(), FreeApi);
+            m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
+            m_RenderShaderSource = new(RenderShader.Source, _ => { });
+            m_SurfaceSize = new(surfaceSize, _ => { });
+            m_FramebufferSize = new(framebufferSize, _ => { });
+            m_ScalingMode = new(ScalingMode.FreeNearest, _ => { });
 
-            GpuNode<GpuHandle<Instance>> m_Instance = new(
+            m_Instance = new(
                 () => CreateInstance(m_Api),
                 instance => FreeInstance(m_Api, instance),
                 [m_Api]);
 
-            GpuNode<GpuHandle<Surface>> m_Surface = new(
+            m_Surface = new(
                 () => CreateSurface(m_Api, m_Window.Node, m_Instance.Node),
                 surface => FreeSurface(m_Api, surface),
                 [m_Api, m_Window, m_Instance]);
