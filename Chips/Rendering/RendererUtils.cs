@@ -40,7 +40,7 @@ namespace Chips.Rendering
         {
             api.SurfaceRelease(surface);
         }
-        
+
         public unsafe static Adapter* CreateAdapter(WebGPU api, Instance* instance, Surface* surface)
         {
             RequestAdapterOptions options = new()
@@ -73,7 +73,7 @@ namespace Chips.Rendering
             return adapter;
         }
 
-        public unsafe static void FreeAdapter(WebGPU api, Adapter* adapter) 
+        public unsafe static void FreeAdapter(WebGPU api, Adapter* adapter)
         {
             api.AdapterRelease(adapter);
         }
@@ -105,7 +105,7 @@ namespace Chips.Rendering
             return device;
         }
 
-        public unsafe static void FreeDevice(WebGPU api, Device* device) 
+        public unsafe static void FreeDevice(WebGPU api, Device* device)
         {
             api.DeviceRelease(device);
         }
@@ -115,7 +115,7 @@ namespace Chips.Rendering
             return api.DeviceGetQueue(device);
         }
 
-        public unsafe static void FreeQueue(WebGPU api, Queue* queue) 
+        public unsafe static void FreeQueue(WebGPU api, Queue* queue)
         {
             api.QueueRelease(queue);
         }
@@ -143,7 +143,7 @@ namespace Chips.Rendering
             return (uint*)SilkMarshal.Allocate((int)(framebufferSize.X * framebufferSize.Y * sizeof(uint)));
         }
 
-        public unsafe static void FreeFramebuffer(uint* framebuffer) 
+        public unsafe static void FreeFramebuffer(uint* framebuffer)
         {
             SilkMarshal.Free((nint)framebuffer);
         }
@@ -162,12 +162,6 @@ namespace Chips.Rendering
             return api.DeviceCreateTexture(device, ref descriptor);
         }
 
-        // Use for both source and scaled textures.
-        public unsafe static TextureView* CreateTextureView(WebGPU api, Texture* texture)
-        {
-            return api.TextureCreateView(texture, null);
-        }
-
         public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, SurfaceConfiguration* surfaceConfiguration)
         {
             TextureDescriptor descriptor = new()
@@ -182,6 +176,23 @@ namespace Chips.Rendering
             return api.DeviceCreateTexture(device, ref descriptor);
         }
 
+        // Use for both source and scaled textures.
+        public unsafe static void FreeTexture(WebGPU api, Texture* texture)
+        {
+            api.TextureRelease(texture);
+        }
+
+        // Use for both source and scaled textures.
+        public unsafe static TextureView* CreateTextureView(WebGPU api, Texture* texture)
+        {
+            return api.TextureCreateView(texture, null);
+        }
+
+        public unsafe static void FreeTextureView(WebGPU api, TextureView* textureView)
+        {
+            api.TextureViewRelease(textureView);
+        }
+
         public unsafe static Sampler* CreateSampler(WebGPU api, Device* device)
         {
             SamplerDescriptor descriptor = new()
@@ -194,6 +205,11 @@ namespace Chips.Rendering
             return api.DeviceCreateSampler(device, ref descriptor);
         }
 
+        public unsafe static void FreeSampler(WebGPU api, Sampler* sampler)
+        {
+            api.SamplerRelease(sampler);
+        }
+
         public unsafe static Buffer* CreateParamsBuffer(WebGPU api, Device* device)
         {
             BufferDescriptor descriptor = new()
@@ -204,11 +220,16 @@ namespace Chips.Rendering
             return api.DeviceCreateBuffer(device, ref descriptor);
         }
 
+        public unsafe static void FreeParamsBuffer(WebGPU api, Buffer* buffer)
+        {
+            api.BufferRelease(buffer);
+        }
+
         // Use for both compute shader and render shader.
         public unsafe static ShaderModule* CreateShaderModule(WebGPU api, Device* device, string shaderSource)
         {
             ShaderModule* module = null;
-            nint shaderPointer = SilkMarshal.StringToPtr(shaderSource);
+            nint shaderPointer = SilkMarshal.StringToPtr(shaderSource, NativeStringEncoding.UTF8);
             try
             {
                 ShaderModuleWGSLDescriptor wgslDescriptor = new()
@@ -232,10 +253,15 @@ namespace Chips.Rendering
             return module;
         }
 
+        public unsafe static void FreeShaderModule(WebGPU api, ShaderModule* shaderModule)
+        {
+            api.ShaderModuleRelease(shaderModule);
+        }
+
         public const string ComputeShaderEntryPoint = "cs_main";
         public unsafe static ComputePipeline* CreateComputePipeline(WebGPU api, Device* device, ShaderModule* computeShaderModule)
         {
-            nint entryPoint = SilkMarshal.StringToPtr(ComputeShaderEntryPoint);
+            nint entryPoint = SilkMarshal.StringToPtr(ComputeShaderEntryPoint, NativeStringEncoding.UTF8);
             ComputePipeline* computePipeline;
             try
             {
@@ -256,12 +282,17 @@ namespace Chips.Rendering
             return computePipeline;
         }
 
+        public unsafe static void FreeComputePipeline(WebGPU api, ComputePipeline* computePipeline)
+        {
+            api.ComputePipelineRelease(computePipeline);
+        }
+
         public const string VertesShaderEntryPoint = "vs_main";
         public const string FragmentShaderEntryPoint = "fs_main";
         public unsafe static RenderPipeline* CreateRenderPipeline(WebGPU api, Device* device, ShaderModule* renderShaderModule)
         {
-            nint vertexShaderEntryPoint = SilkMarshal.StringToPtr(VertesShaderEntryPoint);
-            nint fragmentShaderEntryPoint = SilkMarshal.StringToPtr(FragmentShaderEntryPoint);
+            nint vertexShaderEntryPoint = SilkMarshal.StringToPtr(VertesShaderEntryPoint, NativeStringEncoding.UTF8);
+            nint fragmentShaderEntryPoint = SilkMarshal.StringToPtr(FragmentShaderEntryPoint, NativeStringEncoding.UTF8);
             RenderPipeline* renderPipeline;
             try
             {
@@ -300,6 +331,11 @@ namespace Chips.Rendering
                 SilkMarshal.Free(fragmentShaderEntryPoint);
             }
             return renderPipeline;
+        }
+
+        public unsafe static void FreeRenderPipeline()
+        {
+
         }
 
         public unsafe static BindGroup* CreateComputeBindGroup(
