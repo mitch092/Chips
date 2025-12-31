@@ -55,7 +55,30 @@ namespace Chips.Rendering
                 framebuffer => FreeFramebuffer(framebuffer),
                 [m_FramebufferSize]);
 
-            //GpuNode<GpuHandle<Texture>> m_SourceTexture = new(() => CreateSourceTexture(), sourceTexture => );
+            GpuNode<GpuHandle<Texture>> m_SourceTexture = new(
+                () => CreateSourceTexture(m_Api, m_Device.Node, m_FramebufferSize), 
+                sourceTexture => FreeTexture(m_Api, sourceTexture), 
+                [m_Api, m_Device, m_FramebufferSize]);
+
+            GpuNode<GpuHandle<TextureView>> m_SourceTextureView = new(
+                () => CreateTextureView(m_Api, m_SourceTexture.Node), 
+                sourceTextureView => FreeTextureView(m_Api, sourceTextureView), 
+                [m_Api, m_SourceTexture]);
+
+            GpuNode<GpuHandle<Texture>> m_ScaledTexture = new(
+                () => CreateScaledTexture(m_Api, m_Device.Node, m_SurfaceConfiguration.Node), 
+                scaledTexture => FreeTexture(m_Api, scaledTexture), 
+                [m_Api, m_Device, m_SurfaceConfiguration]);
+
+            GpuNode<GpuHandle<TextureView>> m_ScaledTextureView = new(
+                () => CreateTextureView(m_Api, m_ScaledTexture.Node), 
+                scaledTextureView => FreeTextureView(m_Api, scaledTextureView), 
+                [m_Api, m_ScaledTexture]);
+
+            GpuNode<GpuHandle<Sampler>> m_Sampler = new(
+                () => CreateSampler(m_Api, m_Device.Node), 
+                sampler => FreeSampler(m_Api, sampler), 
+                [m_Api, m_Device]);
         }
     }
 }
