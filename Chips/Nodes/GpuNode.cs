@@ -9,35 +9,38 @@ namespace Chips.Nodes
         private readonly Action<T> m_Destroy;
         private bool m_Dirty = true;
         private T? m_Node = null;
-        private List<INode> m_Children = [];
+        private readonly List<INode> m_Children = [];
 
-        public GpuNode(Func<T> create, Action<T> destroy, List<INode> parents) 
+        public GpuNode(Func<T> create, Action<T> destroy, List<INode> parents)
         {
             m_Create = create;
             m_Destroy = destroy;
-            foreach (var parent in parents) 
+            foreach (var parent in parents)
             {
                 parent.AddChild(this);
             }
         }
 
-        public void AddChild(INode child) 
+        public void AddChild(INode child)
         {
             m_Children.Add(child);
         }
 
-        public void Invalidate() 
+        public void Invalidate()
         {
-            m_Dirty = true;
-            foreach (var child in m_Children) 
+            if (m_Dirty == false)
             {
-                child.Invalidate();
+                m_Dirty = true;
+                foreach (var child in m_Children)
+                {
+                    child.Invalidate();
+                }
             }
         }
 
-        public T Node 
+        public T Node
         {
-            get 
+            get
             {
                 if (m_Dirty)
                 {
@@ -53,11 +56,11 @@ namespace Chips.Nodes
             }
         }
 
-        public void Dispose() 
+        public void Dispose()
         {
-            if (m_Node != null) 
-            {                
-                foreach (var child in m_Children) 
+            if (m_Node != null)
+            {
+                foreach (var child in m_Children)
                 {
                     child.Dispose();
                 }
