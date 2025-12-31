@@ -94,6 +94,31 @@ namespace Chips.Rendering
                 () => CreateShaderModule(m_Api, m_Device.Node, m_RenderShaderSource),
                 renderShaderModule => FreeShaderModule(m_Api, renderShaderModule),
                 [m_Api, m_Device, m_RenderShaderSource]);
+
+            GpuNode<GpuHandle<ComputePipeline>> m_ComputePipeline = new(
+                () => CreateComputePipeline(m_Api, m_Device.Node, m_ComputeShaderModule.Node), 
+                computePipeline => FreeComputePipeline(m_Api, computePipeline), 
+                [m_Api, m_Device, m_ComputeShaderModule]);
+
+            GpuNode<GpuHandle<RenderPipeline>> m_RenderPipeline = new(
+                () => CreateRenderPipeline(m_Api, m_Device.Node, m_RenderShaderModule.Node), 
+                renderPipeline => FreeRenderPipeline(m_Api, renderPipeline), 
+                [m_Api, m_Device, m_RenderShaderModule]);
+
+            GpuNode<GpuHandle<BindGroup>> m_ComputeBindGroup = new(
+                () => CreateComputeBindGroup(m_Api, m_Device.Node, m_ComputePipeline.Node, m_SourceTextureView.Node, m_ScaledTextureView.Node, m_ParamsBuffer.Node, m_Sampler.Node), 
+                computeBindGroup => FreeBindGroup(m_Api, computeBindGroup), 
+                [m_Api, m_Device, m_ComputePipeline, m_SourceTextureView, m_ScaledTextureView, m_ParamsBuffer, m_Sampler]);
+
+            GpuNode<GpuHandle<BindGroup>> m_RenderBindGroup = new(
+                () => CreateRenderBindGroup(m_Api, m_Device.Node, m_RenderPipeline.Node, m_ScaledTextureView.Node, m_Sampler.Node), 
+                renderBindGroup => FreeBindGroup(m_Api, renderBindGroup), 
+                [m_Api, m_Device, m_RenderPipeline, m_ScaledTextureView, m_Sampler]);
+
+            GpuNode<GpuHandle<ScaleParams>> m_ScaleParams = new(
+                () => CreateScaleParams(m_ScalingMode, m_SurfaceConfiguration.Node, m_FramebufferSize), 
+                scaleParams => FreeScaleParams(scaleParams), 
+                [m_ScalingMode, m_SurfaceConfiguration, m_FramebufferSize]);
         }
     }
 }
