@@ -40,7 +40,7 @@ namespace Chips.Rendering
         {
             api.SurfaceRelease(surface);
         }
-        // TODO: Write Free* functions for the rest of the functions below.
+        
         public unsafe static Adapter* CreateAdapter(WebGPU api, Instance* instance, Surface* surface)
         {
             RequestAdapterOptions options = new()
@@ -168,11 +168,11 @@ namespace Chips.Rendering
             return api.TextureCreateView(texture, null);
         }
 
-        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, Vector2D<uint> surfaceSize)
+        public unsafe static Texture* CreateScaledTexture(WebGPU api, Device* device, SurfaceConfiguration* surfaceConfiguration)
         {
             TextureDescriptor descriptor = new()
             {
-                Size = new Extent3D(surfaceSize.X, surfaceSize.Y, 1),
+                Size = new Extent3D(surfaceConfiguration->Width, surfaceConfiguration->Height, 1),
                 Format = TextureFormat.Rgba8Unorm,
                 Usage = TextureUsage.StorageBinding | TextureUsage.TextureBinding,
                 Dimension = TextureDimension.Dimension2D,
@@ -394,8 +394,10 @@ namespace Chips.Rendering
             return renderBindGroup;
         }
 
-        public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, Vector2D<uint> surfaceSize, Vector2D<uint> framebufferSize)
+        public unsafe static ScaleParams* CreateScaleParams(ScalingMode mode, SurfaceConfiguration* surfaceConfiguration, Vector2D<uint> framebufferSize)
         {
+            Vector2D<uint> surfaceSize = new(surfaceConfiguration->Width, surfaceConfiguration->Height);
+
             uint scale = Math.Max(1u, Math.Min(
                 surfaceSize.X / framebufferSize.X,
                 surfaceSize.Y / framebufferSize.Y));
@@ -424,14 +426,15 @@ namespace Chips.Rendering
             Buffer* paramsBuffer,
             ScaleParams* scaleParams,
             uint* framebuffer,
-            Vector2D<uint> framebufferSize,
             Texture* sourceTexture,
             ComputePipeline* computePipeline,
             BindGroup* computeBindGroup,
-            Vector2D<uint> surfaceSize,
             RenderPipeline* renderPipeline,
             BindGroup* renderBindGroup)
         {
+            Vector2D<uint> framebufferSize = new(scaleParams->SrcW, scaleParams->SrcH);
+            Vector2D<uint> surfaceSize = new(scaleParams->DstW, scaleParams->DstH);
+
             CommandEncoder* commandEncoder = null;
             ComputePassEncoder* computePassEncoder = null;
             TextureView* backbufferView = null;
