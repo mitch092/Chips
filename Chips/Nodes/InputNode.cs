@@ -20,6 +20,7 @@ namespace Chips.Nodes
             get => m_Node;
             set
             {
+                m_Destroy(m_Node);
                 m_Node = value;
                 Invalidate();
             }
