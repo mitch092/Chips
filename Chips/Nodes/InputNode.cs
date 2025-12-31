@@ -7,13 +7,15 @@ namespace Chips.Nodes
     {
         private T m_Node;
         private readonly Action<T> m_Destroy;
-        private List<INode> m_Children = [];
+        private readonly List<INode> m_Children = [];
 
         public InputNode(T node, Action<T> destroy)
         {
             m_Node = node;
             m_Destroy = destroy;
         }
+
+        public static implicit operator T(InputNode<T> inputNode) => inputNode.Node;
 
         public T Node
         {

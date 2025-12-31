@@ -31,7 +31,7 @@ namespace Chips.Rendering
             api.InstanceRelease(instance);
         }
 
-        public unsafe static Surface* CreateSurface(IWindow window, WebGPU api, Instance* instance)
+        public unsafe static Surface* CreateSurface(WebGPU api, IWindow window, Instance* instance)
         {
             return window.CreateWebGPUSurface(api, instance);
         }

@@ -38,6 +38,8 @@ namespace Chips.Nodes
             }
         }
 
+        public static implicit operator T(GpuNode<T> gpuNode) => gpuNode.Node;
+
         public T Node
         {
             get
