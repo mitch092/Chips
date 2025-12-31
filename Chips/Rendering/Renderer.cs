@@ -42,13 +42,13 @@ namespace Chips.Rendering
         {
             Vector2D<uint> surfaceSize = new((uint)window.Size.X, (uint)window.Size.Y);
 
-            m_Api = new(CreateApi(), FreeApi);
-            m_Window = new(window, _ => { });
-            m_ComputeShaderSource = new(ComputeShader.Source, _ => { });
-            m_RenderShaderSource = new(RenderShader.Source, _ => { });
-            m_SurfaceSize = new(surfaceSize, _ => { });
-            m_FramebufferSize = new(framebufferSize, _ => { });
-            m_ScalingMode = new(ScalingMode.FreeNearest, _ => { });
+            m_Api = new(CreateApi, FreeApi);
+            m_Window = new(() => window, _ => { });
+            m_ComputeShaderSource = new(() => ComputeShader.Source, _ => { });
+            m_RenderShaderSource = new(() => RenderShader.Source, _ => { });
+            m_SurfaceSize = new(() => surfaceSize, _ => { });
+            m_FramebufferSize = new(() => framebufferSize, _ => { });
+            m_ScalingMode = new(() => ScalingMode.FreeNearest, _ => { });
 
             m_Instance = new(
                 () => CreateInstance(m_Api),
