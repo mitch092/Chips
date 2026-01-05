@@ -196,6 +196,7 @@ namespace Chips.Rendering
                 MagFilter = FilterMode.Linear,
                 AddressModeU = AddressMode.ClampToEdge,
                 AddressModeV = AddressMode.ClampToEdge,
+                MaxAnisotropy = 1,
             };
             return api.DeviceCreateSampler(device, ref descriptor);
         }
@@ -289,13 +290,17 @@ namespace Chips.Rendering
                     EntryPoint = fragmentShaderEntryPoint,
                     Targets = colorTargetStates,
                     TargetCount = 1,
-                };
+                };                
                 RenderPipelineDescriptor descriptor = new()
                 {
                     Vertex = new()
                     {
                         Module = renderShaderModule,
                         EntryPoint = vertexShaderEntryPoint
+                    },
+                    Multisample = new()
+                    {
+                        Count = 1
                     },
                     Fragment = &fragment,
                     Primitive = new()
