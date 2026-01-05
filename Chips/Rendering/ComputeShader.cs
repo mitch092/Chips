@@ -28,40 +28,41 @@ var samp : sampler;
 
 @compute @workgroup_size(8,8)
 fn cs_main(@builtin(global_invocation_id) id : vec3<u32>) {
-    if (id.x >= p.dstW || id.y >= p.dstH) {
+    let srcV = vec2<u32>(p.srcW, p.srcH);
+    let dstV = vec2<u32>(p.dstW, p.dstH);
+    let off = vec2<u32>(p.offX, p.offY);
+    let id2 = vec2<u32>(id.xy);
+
+    if (any(id2 >= dstV)) {
         return;
     }
 
     // Integer scaling (pixel-perfect)
     if (p.mode == 0u) {
-        if (id.x < p.offX || id.y < p.offY ||
-            id.x >= p.offX + p.srcW * p.scale ||
-            id.y >= p.offY + p.srcH * p.scale) {
-            textureStore(dst, vec2<i32>(id.xy), vec4(0,0,0,1));
+        let ur = off + (srcV * p.scale);
+        if (all(off <= id2) && all(id2 < ur)) {
+            let s = (id2 - off) / p.scale;
+            let c = textureLoad(src, s, 0);
+            textureStore(dst, id2, c);
             return;
         }
-
-        let sx = (id.x - p.offX) / p.scale;
-        let sy = (id.y - p.offY) / p.scale;
-        let c = textureLoad(src, vec2<i32>(sx, sy), 0);
-        textureStore(dst, vec2<i32>(id.xy), c);
-        return;
+        textureStore(dst, id2, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        return;        
     }
 
-    let uv = (vec2<f32>(id.xy) + vec2(0.5)) / vec2<f32>(p.dstW, p.dstH);
+    let uv = (vec2<f32>(id2) + vec2(0.5)) / vec2<f32>(dstV);
 
     // Free nearest
     if (p.mode == 1u) {
-        let sx = u32(uv.x * f32(p.srcW));
-        let sy = u32(uv.y * f32(p.srcH));
-        let c = textureLoad(src, vec2<i32>(sx, sy), 0);
-        textureStore(dst, vec2<i32>(id.xy), c);
+        let s = vec2<u32>(uv * vec2<f32>(srcV));
+        let c = textureLoad(src, s, 0);
+        textureStore(dst, id2, c);
         return;
     }
 
     // Free linear
     let c = textureSampleLevel(src, samp, uv, 0.0);
-    textureStore(dst, vec2<i32>(id.xy), c);
+    textureStore(dst, id2, c);
 }";
     }
 }
